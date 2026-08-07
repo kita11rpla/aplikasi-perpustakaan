@@ -197,26 +197,28 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
             </div>
         <?php endif; ?>
 
-        <!-- Form Filter & Search Katalog -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body">
-                <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="GET" class="row g-3">
-                    <div class="col-md-4">
-                        <select name="kategori" class="form-select">
-                            <option>Semua Kategori</option>
-                            <option value="RPL" <?php if($kategori=='RPL') echo 'selected'; ?>>RPL</option>
-                            <option value="SEJ" <?php if($kategori=='SEJ') echo 'selected'; ?>>Sejarah</option>
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <input type="text" name="search" class="form-control" placeholder="Cari judul buku, penulis, kodebuku..." value="<?php echo htmlspecialchars($search); ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-search me-1"></i> Cari Katalog</button>
-                    </div>
-                </form>
-            </div>
+      <!-- Form Filter & Search Katalog -->
+    <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="GET" class="row g-3">
+     
+            
+            <!-- BAGIAN INI YANG DIUBAH -->
+            <div class="col-md-5">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Cari judul buku, penulis, kodebuku..." value="<?php echo htmlspecialchars($search); ?>">
+                    <!-- Tombol Reset -->
+                    <a href="pencarian.php" class="btn btn-outline-danger" title="Reset Pencarian">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
         </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-search me-1"></i> Cari Katalog</button>
+            </div>
+        </form>
+    </div>
+    </div>
 
         <!-- TABEL 1: DAFTAR KATALOG BUKU -->
         <div class="card shadow-sm border-0 mb-5">
