@@ -154,6 +154,8 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+     <!-- HTML5 QR / Barcode Scanner CDN -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body class="bg-light">
 
@@ -197,28 +199,32 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
             </div>
         <?php endif; ?>
 
-      <!-- Form Filter & Search Katalog -->
-    <div class="card shadow-sm border-0 mb-4">
+ <!-- Form Filter & Search Katalog -->
+<div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
-        <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="GET" class="row g-3">
-     
-            
-            <!-- BAGIAN INI YANG DIUBAH -->
-            <div class="col-md-5">
+        <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="GET" id="searchForm" class="row g-3">
+            <div class="col-md-7">
                 <div class="input-group">
-                    <input type="text" name="search" class="form-control" placeholder="Cari judul buku, penulis, kodebuku..." value="<?php echo htmlspecialchars($search); ?>">
+                    <input type="text" name="search" id="searchInput" class="form-control" placeholder="Cari judul buku, penulis, ISBN..." value="<?php echo htmlspecialchars($search); ?>">
+                    
                     <!-- Tombol Reset -->
                     <a href="pencarian.php" class="btn btn-outline-danger" title="Reset Pencarian">
                         <i class="bi bi-x-lg"></i>
                     </a>
+                    
+                    <!-- Tombol Scan Barcode Camera -->
+                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalScanBarcode" title="Scan Barcode / QR">
+                        <i class="bi bi-qr-code-scan me-1"></i> Scan
+                    </button>
                 </div>
-        </div>
-            <div class="col-md-3">
+            </div>
+
+            <div class="col-md-5">
                 <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-search me-1"></i> Cari Katalog</button>
             </div>
         </form>
     </div>
-    </div>
+</div>
 
         <!-- TABEL 1: DAFTAR KATALOG BUKU -->
         <div class="card shadow-sm border-0 mb-5">
@@ -452,5 +458,83 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
             }
         });
     </script>
+
+    <!-- MODAL SCANNER BARCODE -->
+<div class="modal fade" id="modalScanBarcode" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-qr-code-scan me-2"></i>Scan Barcode Buku</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted small">Arahkan kamera ke barcode / QR Code pada buku</p>
+                <!-- Area Preview Kamera -->
+                <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Modal Peminjaman Buku
+    const modalPinjam = document.getElementById('modalPinjam');
+    if (modalPinjam) {
+        modalPinjam.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            document.getElementById('modal_isbn').value = button.getAttribute('data-isbn');
+            document.getElementById('modal_judul').value = button.getAttribute('data-judul');
+        });
+    }
+
+    // --- INTEGRASI BARCODE SCANNER ---
+    let html5QrcodeScanner = null;
+    const modalScan = document.getElementById('modalScanBarcode');
+
+    if (modalScan) {
+        // Saat modal dibuka, jalankan kamera
+        modalScan.addEventListener('shown.bs.modal', function () {
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                fps: 10, 
+                qrbox: { width: 250, height: 150 } 
+            });
+
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        });
+
+        // Saat modal ditutup, matikan kamera agar tidak memberatkan device
+        modalScan.addEventListener('hidden.bs.modal', function () {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => console.error("Gagal menghentikan scanner:", error));
+            }
+        });
+    }
+
+    // Fungsi saat barcode berhasil terbaca
+    function onScanSuccess(decodedText, decodedResult) {
+        // Stop kamera
+        html5QrcodeScanner.clear();
+        
+        // Isi nilai hasil scan ke input pencarian
+        document.getElementById('searchInput').value = decodedText;
+        
+        // Tutup modal
+        const bsModal = bootstrap.Modal.getInstance(modalScan);
+        if (bsModal) bsModal.hide();
+
+        // Submit form otomatis untuk langsung menampilkan buku
+        document.getElementById('searchForm').submit();
+    }
+
+    function onScanFailure(error) {
+        // Abaikan error pembacaan per frame
+    }
+});
+</script>
+
 </body>
 </html>
