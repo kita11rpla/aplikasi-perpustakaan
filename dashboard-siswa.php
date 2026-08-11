@@ -8,10 +8,27 @@ if (!isset($_SESSION['siswa'])) {
 include 'Koneksi.php';
 $user = $_SESSION['siswa'];
 
-// Mengambil data buku dari database
-$query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel buku sudah dibuat di database
-?>
+// KUERI TERHUBUNG LANGSUNG DENGAN TABEL TRANSAKSI
+// Menggunakan TRIM & LOWER untuk mencegah ketidakcocokan spasi/huruf pada ISBN
+$query_buku = mysqli_query($koneksi, "
+    SELECT 
+        p.*, 
+        IF(t.ISBN IS NOT NULL, 'Dipinjam', 'Tersedia') AS status_buku
+    FROM penambahanbuku p
+    LEFT JOIN (
+        SELECT DISTINCT TRIM(ISBN) AS ISBN
+        FROM transaksi 
+        WHERE status_transaksi = 'dipinjam'
+    ) t ON LOWER(TRIM(p.ISBN)) = LOWER(t.ISBN)
+    ORDER BY p.id_buku DESC
+");
 
+if (!$query_buku) {
+    die("Gagal mengambil data dari database: " . mysqli_error($koneksi));
+}
+
+$total_buku = mysqli_num_rows($query_buku);
+?>
 
 <!DOCTYPE html>
 <html lang="id">
@@ -24,7 +41,7 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
@@ -34,7 +51,7 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             min-height: 100vh;
         }
 
-        /* Sidebar Navigasi */
+        /* Sidebar Navigasi Left Side */
         .sidebar {
             width: 250px;
             background: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
@@ -49,6 +66,7 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             font-size: 20px;
             margin-bottom: 30px;
             text-align: center;
+            letter-spacing: 0.5px;
         }
 
         .menu a {
@@ -59,7 +77,7 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             border-radius: 8px;
             margin-bottom: 10px;
             font-weight: 500;
-            transition: 0.3s;
+            transition: all 0.3s ease;
         }
 
         .menu a:hover, .menu a.active {
@@ -76,13 +94,14 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
+            transition: background 0.3s;
         }
 
         .btn-logout:hover {
             background-color: #c0392b;
         }
 
-        /* Konten Utama */
+        /* Area Main Content */
         .main-content {
             flex: 1;
             padding: 30px;
@@ -100,7 +119,7 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             color: #1e3c72;
         }
 
-        /* Card Informasi Status */
+        /* Card Statistik Ringkas */
         .cards-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -112,7 +131,7 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border-left: 5px solid #2a5298;
         }
 
@@ -128,18 +147,43 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             color: #1e3c72;
         }
 
-        /* Tabel Daftar Buku */
+        /* Container Tabel Data */
         .table-container {
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .table-container h2 {
             font-size: 18px;
-            margin-bottom: 20px;
             color: #333;
+            margin: 0;
+        }
+
+        /* Search Box Input */
+        .search-box {
+            padding: 8px 15px;
+            width: 280px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-box:focus {
+            border-color: #1e3c72;
+            box-shadow: 0 0 5px rgba(30, 60, 114, 0.2);
         }
 
         table {
@@ -163,91 +207,131 @@ $query_buku = mysqli_query($koneksi, "SELECT * FROM buku"); // Pastikan tabel bu
             background-color: #f8fafc;
         }
 
-        .btn-pinjam {
-            background-color: #27ae60;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
+        /* Badge Status Ketersediaan Buku */
+        .badge-tersedia {
+            display: inline-block;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #c8e6c9;
         }
 
-        .btn-pinjam:hover {
-            background-color: #219150;
+        .badge-dipinjam {
+            display: inline-block;
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #ffcdd2;
         }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Kiri -->
+    <!-- Navigasi Utama -->
     <div class="sidebar">
         <div>
             <h2>📚 PerpusApp</h2>
             <div class="menu">
                 <a href="#" class="active">Dashboard</a>
-                <a href="#">Buku Dipinjam</a>
-                <a href="#">Riwayat</a>
+                <a href="Pencarian.php">Cari Katalog</a>
             </div>
         </div>
         <a href="logout-siswa.php" class="btn-logout">Keluar</a>
     </div>
 
-    <!-- Area Konten Utama -->
+    <!-- Konten Dashboard -->
     <div class="main-content">
         <div class="header">
             <h1>Selamat Datang, <?php echo htmlspecialchars($user['nama']); ?>! 👋</h1>
         </div>
 
-        <!-- Ringkasan Card -->
+        <!-- Kartu Ringkasan -->
         <div class="cards-container">
             <div class="info-card">
-                <h3>Buku Sedang Dipinjam</h3>
-                <div class="number">1</div>
+                <h3>Total Koleksi Buku</h3>
+                <div class="number"><?php echo $total_buku; ?></div>
             </div>
             <div class="info-card" style="border-left-color: #27ae60;">
-                <h3>Total Riwayat Pinjam</h3>
-                <div class="number">5</div>
-            </div>
-            <div class="info-card" style="border-left-color: #e67e22;">
-                <h3>Denda Aktif</h3>
-                <div class="number">Rp 0</div>
+                <h3>Status Perpustakaan</h3>
+                <div class="number" style="font-size: 18px; color: #27ae60; margin-top: 5px;">Buka (Aktif)</div>
             </div>
         </div>
 
-        <!-- Tabel Katalog Buku -->
+        <!-- Tabel Daftar Buku -->
         <div class="table-container">
-            <h2>Katalog Buku Tersedia</h2>
+            <div class="table-header-flex">
+                <h2>Daftar Koleksi Buku Perpustakaan</h2>
+                <input type="text" id="searchTable" class="search-box" placeholder="🔍 Cari judul, penulis, ISBN...">
+            </div>
+
             <table>
                 <thead>
                     <tr>
                         <th>No</th>
+                        <th>Kode ISBN</th>
                         <th>Judul Buku</th>
-                        <th>Pengarang</th>
+                        <th>Penulis</th>
+                        <th>Penerbit</th>
+                        <th>Tahun Terbit</th>
                         <th>Status</th>
-                        <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     <?php
-                    $no = 1;
-                    while ($row = mysqli_fetch_assoc($query_buku)) {
-                        $status = $row['stok'] > 0 ? '<span style="color: green; font-weight: 600;">Tersedia</span>' : '<span style="color: red; font-weight: 600;">Dipinjam</span>';
-                        $disabled = $row['stok'] > 0 ? '' : 'disabled style="background-color: #ccc; cursor: not-allowed;"';
-                        $buttonLabel = $row['stok'] > 0 ? 'Pinjam Buku' : 'Tidak Tersedia';
-                        echo "<tr>";
-                        echo "<td>" . $no++ . "</td>";
-                        echo "<td>" . htmlspecialchars($row['judul']) . "</td>";
-                        echo "<td>" . htmlspecialchars($row['pengarang']) . "</td>";
-                        echo "<td>$status</td>";
-                        echo "<td><button class=\"btn-pinjam\" $disabled>$buttonLabel</button></td>";
-                        echo "</tr>";
+                    if ($total_buku > 0) {
+                        $no = 1;
+                        while ($row = mysqli_fetch_assoc($query_buku)) {
+                            // Format tahun terbit
+                            $tahun = !empty($row['tahun_terbit']) ? date('Y', strtotime($row['tahun_terbit'])) : '-';
+
+                            // Cek status buku hasil LEFT JOIN
+                            if ($row['status_buku'] === 'Dipinjam') {
+                                $badge = '<span class="badge-dipinjam">Sedang Dipinjam</span>';
+                            } else {
+                                $badge = '<span class="badge-tersedia">Tersedia di Perpus</span>';
+                            }
+
+                            echo "<tr>";
+                            echo "<td>" . $no++ . "</td>";
+                            echo "<td><code>" . htmlspecialchars($row['ISBN']) . "</code></td>";
+                            echo "<td><strong>" . htmlspecialchars($row['judul_buku']) . "</strong></td>";
+                            echo "<td>" . htmlspecialchars($row['penulis']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['penerbit']) . "</td>";
+                            echo "<td>" . $tahun . "</td>";
+                            echo "<td>" . $badge . "</td>";
+                            echo "</tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='7' style='text-align:center;'>Belum ada data buku di dalam sistem.</td></tr>";
                     }
                     ?>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Script Fitur Live Filter Pencarian -->
+    <script>
+    document.getElementById('searchTable').addEventListener('keyup', function() {
+        let keyword = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#tableBody tr');
+
+        rows.forEach(row => {
+            let textContent = row.textContent.toLowerCase();
+            if (textContent.includes(keyword)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    });
+    </script>
 
 </body>
 </html>
