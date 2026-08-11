@@ -3,6 +3,8 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
+CREATE DATABASE IF NOT EXISTS `dbbuku` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `dbbuku`;
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -66,6 +68,30 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `created_at`) VALUES
 (1, 'qwe', 'qwe@gmail.com', '$2y$10$.SykcCNOZvKB6C1kB85Rfuvxe001xP6t9elTXCfeHEKtbUPmLGNji', '2026-08-06 06:37:27');
 
+
+CREATE TABLE `siswa` (
+  `nisn` varchar(20) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  PRIMARY KEY (`nisn`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `siswa` (`nisn`, `nama`, `password`) VALUES
+('20240001', 'Diki Setiawan', 'test123'),
+('20240002', 'Siti Aminah', 'password123');
+
+CREATE TABLE `buku` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `judul` varchar(255) NOT NULL,
+  `pengarang` varchar(255) NOT NULL,
+  `stok` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `buku` (`judul`,`pengarang`,`stok`) VALUES
+('Pemrograman Web dengan PHP & MySQL', 'Budi Raharjo', 1),
+('Belajar Dasar HTML & CSS', 'Ahmad Fauzi', 1),
+('Algoritma & Struktur Data', 'Siti Aminah', 0);
 
 ALTER TABLE `penambahanbuku`
   ADD PRIMARY KEY (`id_buku`);
