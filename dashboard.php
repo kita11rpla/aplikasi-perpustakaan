@@ -160,9 +160,17 @@ $user = $_SESSION['user'];
     </div>
     <div class="stats">
         <div class="stat">
-            <h3>Jumlah Pengguna</h3>
+            <h3>Jumlah Pengguna Admin</h3>
             <?php
             $query = mysqli_query($koneksi, "SELECT * FROM users");
+            $jumlah_data = mysqli_num_rows($query);
+            echo "<h1>$jumlah_data</h1>"  ;
+            ?>
+        </div>
+            <div class="stat">
+            <h3>Jumlah Pengguna Siswa</h3>
+            <?php
+            $query = mysqli_query($koneksi, "SELECT * FROM siswa");
             $jumlah_data = mysqli_num_rows($query);
             echo "<h1>$jumlah_data</h1>"  ;
             ?>
