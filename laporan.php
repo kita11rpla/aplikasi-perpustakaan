@@ -133,7 +133,7 @@ if ($result && mysqli_num_rows($result) > 0) {
 <body class="bg-light">
 
     <!-- Navbar Navigasi (Sembunyi Saat Cetak) -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4 no-print">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 no-print">
         <div class="container">
             <a class="navbar-brand fw-bold" href="dashboard.php">
                 <i class="bi bi-book-half me-2"></i>Perpustakaan RPL

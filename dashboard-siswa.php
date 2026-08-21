@@ -8,18 +8,20 @@ if (!isset($_SESSION['siswa'])) {
 include 'Koneksi.php';
 $user = $_SESSION['siswa'];
 
-// KUERI TERHUBUNG LANGSUNG DENGAN TABEL TRANSAKSI
-// Menggunakan TRIM & LOWER untuk mencegah ketidakcocokan spasi/huruf pada ISBN
+// KUERI BARU: MENGHITUNG TOTAL STOK, DIPINJAM, DAN SISA STOK REAL-TIME
 $query_buku = mysqli_query($koneksi, "
     SELECT 
         p.*, 
-        IF(t.ISBN IS NOT NULL, 'Dipinjam', 'Tersedia') AS status_buku
+        IFNULL(p.stok, 0) AS total_stok,
+        IFNULL(t.total_dipinjam, 0) AS dipinjam,
+        (IFNULL(p.stok, 0) - IFNULL(t.total_dipinjam, 0)) AS sisa_stok
     FROM penambahanbuku p
     LEFT JOIN (
-        SELECT DISTINCT TRIM(ISBN) AS ISBN
+        SELECT ISBN, COUNT(*) AS total_dipinjam 
         FROM transaksi 
         WHERE status_transaksi = 'dipinjam'
-    ) t ON LOWER(TRIM(p.ISBN)) = LOWER(t.ISBN)
+        GROUP BY ISBN
+    ) t ON LOWER(TRIM(p.ISBN)) = LOWER(TRIM(t.ISBN))
     ORDER BY p.id_buku DESC
 ");
 
@@ -219,7 +221,7 @@ $total_buku = mysqli_num_rows($query_buku);
             border: 1px solid #c8e6c9;
         }
 
-        .badge-dipinjam {
+        .badge-habis {
             display: inline-block;
             background-color: #ffebee;
             color: #c62828;
@@ -239,7 +241,6 @@ $total_buku = mysqli_num_rows($query_buku);
             <h2>📚 PerpusApp</h2>
             <div class="menu">
                 <a href="#" class="active">Dashboard</a>
-                <a href="Pencarian.php">Cari Katalog</a>
             </div>
         </div>
         <a href="logout-siswa.php" class="btn-logout">Keluar</a>
@@ -254,7 +255,7 @@ $total_buku = mysqli_num_rows($query_buku);
         <!-- Kartu Ringkasan -->
         <div class="cards-container">
             <div class="info-card">
-                <h3>Total Koleksi Buku</h3>
+                <h3>Total Judul Buku</h3>
                 <div class="number"><?php echo $total_buku; ?></div>
             </div>
             <div class="info-card" style="border-left-color: #27ae60;">
@@ -278,8 +279,8 @@ $total_buku = mysqli_num_rows($query_buku);
                         <th>Judul Buku</th>
                         <th>Penulis</th>
                         <th>Penerbit</th>
-                        <th>Tahun Terbit</th>
-                        <th>Status</th>
+                        <th style="text-align: center;">Sisa Stok</th>
+                        <th style="text-align: center;">Status Buku</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -287,14 +288,14 @@ $total_buku = mysqli_num_rows($query_buku);
                     if ($total_buku > 0) {
                         $no = 1;
                         while ($row = mysqli_fetch_assoc($query_buku)) {
-                            // Format tahun terbit
-                            $tahun = !empty($row['tahun_terbit']) ? date('Y', strtotime($row['tahun_terbit'])) : '-';
+                            $sisa_stok = (int)$row['sisa_stok'];
+                            $total_stok = (int)$row['total_stok'];
 
-                            // Cek status buku hasil LEFT JOIN
-                            if ($row['status_buku'] === 'Dipinjam') {
-                                $badge = '<span class="badge-dipinjam">Sedang Dipinjam</span>';
+                            // Logika penentuan badge ketersediaan
+                            if ($sisa_stok > 0) {
+                                $badge = '<span class="badge-tersedia">Tersedia</span>';
                             } else {
-                                $badge = '<span class="badge-tersedia">Tersedia di Perpus</span>';
+                                $badge = '<span class="badge-habis">Stok Habis</span>';
                             }
 
                             echo "<tr>";
@@ -303,8 +304,12 @@ $total_buku = mysqli_num_rows($query_buku);
                             echo "<td><strong>" . htmlspecialchars($row['judul_buku']) . "</strong></td>";
                             echo "<td>" . htmlspecialchars($row['penulis']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['penerbit']) . "</td>";
-                            echo "<td>" . $tahun . "</td>";
-                            echo "<td>" . $badge . "</td>";
+                            
+                            // Kolom Sisa Stok
+                            echo "<td style='text-align: center;'><strong>" . $sisa_stok . "</strong> / " . $total_stok . "</td>";
+                            
+                            // Kolom Status Buku
+                            echo "<td style='text-align: center;'>" . $badge . "</td>";
                             echo "</tr>";
                         }
                     } else {

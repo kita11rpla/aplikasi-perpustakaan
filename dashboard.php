@@ -139,7 +139,8 @@ $user = $_SESSION['user'];
 <div class="sidebar">
     <h2>Admin Panel</h2>
     <a href="Pencarian.php">🔎 Pencarian Buku</a>
-    <a href="TabelPengguna.php">👤 Users</a>
+    <a href="TabelPengguna.php">👤 User Admin</a>
+    <a href="TabelPengguna-Siswa.php"> 👤 User Siswa</a>
     <a href="#">📈 Statistik</a>
     <a href="laporan.php">📝 Laporan Buku</a>
     

@@ -204,7 +204,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
 <body class="bg-light">
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container">
             <a class="navbar-brand fw-bold" href="dashboard.php">
                 <i class="bi bi-book-half me-2"></i>Perpustakaan RPL
@@ -328,7 +328,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                                             <i class="bi bi-journal-arrow-up me-1"></i> Pinjamkan
                                         </button>
                                     <?php else: ?>
-                                        <button class="btn btn-sm btn-secondary fw-bold" disabled>
+                                        <button class="btn btn-sm btn-danger fw-bold" >
                                             <i class="bi bi-x-circle me-1"></i> Stok Habis
                                         </button>
                                     <?php endif; ?>
@@ -555,7 +555,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                     <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>

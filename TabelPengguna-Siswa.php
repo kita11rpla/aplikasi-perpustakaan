@@ -1,14 +1,17 @@
 <?php
-include "Koneksi.php";
+session_start();
 
-// Query mengambil data pengguna
-$result = mysqli_query($koneksi, "SELECT * FROM users ORDER BY id DESC");
+// Koneksi ke database
+include 'Koneksi.php';
 
-if (!$result) {
-    die("Gagal mengambil data: " . mysqli_error($koneksi));
+// Ambil seluruh data dari tabel `siswa`
+$query_siswa = mysqli_query($koneksi, "SELECT * FROM siswa ORDER BY nama ASC");
+
+if (!$query_siswa) {
+    die("Gagal mengambil data dari database: " . mysqli_error($koneksi));
 }
 
-$total_users = mysqli_num_rows($result);
+$total_siswa = mysqli_num_rows($query_siswa);
 ?>
 
 <!DOCTYPE html>
@@ -16,7 +19,7 @@ $total_users = mysqli_num_rows($result);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Pengguna - Perpustakaan</title>
+    <title>Data Siswa - Perpustakaan</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -41,8 +44,8 @@ $total_users = mysqli_num_rows($result);
 
         /* Avatar Inisial */
         .avatar-circle {
-            width: 38px;
-            height: 38px;
+            width: 40px;
+            height: 40px;
             background-color: #e9ecef;
             color: #1e3c72;
             font-weight: 700;
@@ -50,10 +53,10 @@ $total_users = mysqli_num_rows($result);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 15px;
         }
 
-        /* Table Styling */
+        /* Custom Card Table */
         .custom-card {
             border: none;
             border-radius: 15px;
@@ -71,10 +74,10 @@ $total_users = mysqli_num_rows($result);
 
         .table tbody tr:hover {
             background-color: #f8fafc !important;
-            transform: scale(1.002);
+            transform: scale(1.001);
         }
 
-        /* Custom Input Search */
+        /* Input Search Box */
         .search-container {
             position: relative;
         }
@@ -99,7 +102,7 @@ $total_users = mysqli_num_rows($result);
             box-shadow: 0 0 8px rgba(42, 82, 152, 0.2);
         }
 
-        /* Back Button Animation */
+        /* Tombol Kembali */
         .btn-back {
             border-radius: 10px;
             padding: 10px 25px;
@@ -114,85 +117,78 @@ $total_users = mysqli_num_rows($result);
 </head>
 <body class="py-4">
 
-    <div class="container my-4" style="max-width: 1000px;">
+    <div class="container my-4" style="max-width: 900px;">
         
-        <!-- Header Banner & Statistik -->
+        <!-- Banner Header & Informasi Ringkas -->
         <div class="header-card mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h3 class="fw-bold mb-1"><i class="bi bi-people-fill me-2"></i>Daftar Pengguna</h3>
-                <p class="mb-0 text-white-50">Kelola dan lihat informasi seluruh pengguna terdaftar di sistem.</p>
+                <h3 class="fw-bold mb-1"><i class="bi bi-mortarboard-fill me-2"></i>Data Akun Siswa</h3>
+                <p class="mb-0 text-white-50">Daftar seluruh akun siswa terdaftar di perpustakaan.</p>
             </div>
             <div class="bg-white bg-opacity-10 px-4 py-2 rounded-3 text-center border border-white border-opacity-25">
-                <span class="d-block small text-white-50">Total Pengguna</span>
-                <span class="fs-4 fw-bold text-white"><?= $total_users; ?></span>
+                <span class="d-block small text-white-50">Total Siswa</span>
+                <span class="fs-4 fw-bold text-white"><?= $total_siswa; ?></span>
             </div>
         </div>
 
-        <!-- Card Tabel & Pencarian -->
+        <!-- Kartu Tabel Data -->
         <div class="card custom-card bg-white">
             <div class="card-body p-4">
                 
                 <!-- Filter Search Bar -->
                 <div class="row mb-3 align-items-center justify-content-between">
-                    <div class="col-md-6 col-lg-5 mb-2 mb-md-0">
+                    <div class="col-md-6 mb-2 mb-md-0">
                         <div class="search-container">
                             <i class="bi bi-search"></i>
-                            <input type="text" id="searchInput" class="form-control search-input" placeholder="Cari nama atau email pengguna...">
+                            <input type="text" id="searchInput" class="form-control search-input" placeholder="Cari NISN atau Username...">
                         </div>
                     </div>
                     <div class="col-auto text-muted small">
-                        <i class="bi bi-info-circle me-1"></i> Menampilkan seluruh data pengguna aktif
+                        <i class="bi bi-info-circle me-1"></i> Data dari tabel database: <code>siswa</code>
                     </div>
                 </div>
 
-                <!-- Table Data -->
+                <!-- Tabel Informasi Siswa -->
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="userTable">
+                    <table class="table table-hover align-middle mb-0" id="siswaTable">
                         <thead class="table-light text-secondary">
                             <tr>
                                 <th scope="col" class="text-center" style="width: 70px;">No</th>
-                                <th scope="col">Pengguna</th>
-                                <th scope="col">Email</th>
-                                <th scope="col" class="text-center">Role / Status</th>
+                                <th scope="col">NISN</th>
+                                <th scope="col">Username Siswa</th>
+                                <th scope="col" class="text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             <?php 
-                            if ($total_users > 0) :
+                            if ($total_siswa > 0) :
                                 $no = 1;
-                                while ($row = mysqli_fetch_assoc($result)) : 
-                                    // Ambil huruf pertama nama untuk avatar
-                                    $nama = htmlspecialchars($row['name'] ?? $row['nama'] ?? 'User');
-                                    $email = htmlspecialchars($row['email'] ?? '-');
-                                    $role = htmlspecialchars($row['role'] ?? 'Admin');
-                                    $initial = strtoupper(substr($nama, 0, 1));
+                                while ($row = mysqli_fetch_assoc($query_siswa)) : 
+                                    $username = htmlspecialchars($row['nama']);
+                                    $nisn = htmlspecialchars($row['nisn']);
+                                    $initial = strtoupper(substr($username, 0, 1));
                             ?>
                             <tr>
                                 <td class="text-center fw-bold text-muted"><?= $no++; ?></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace px-3 py-2">
+                                        <i class="bi bi-card-heading me-1 text-primary"></i><?= $nisn; ?>
+                                    </span>
+                                </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle">
                                             <?= $initial; ?>
                                         </div>
                                         <div>
-                                            <span class="fw-bold text-dark d-block"><?= $nama; ?></span>
-                                            <small class="text-muted font-monospace">ID: #<?= sprintf("%03d", $row['id'] ?? $no-1); ?></small>
+                                            <span class="fw-bold text-dark d-block"><?= $username; ?></span>
                                         </div>
                                     </div>
                                 </td>
-                                <td>
-                                    <span class="text-secondary"><i class="bi bi-envelope me-2 text-primary"></i><?= $email; ?></span>
-                                </td>
                                 <td class="text-center">
-                                    <?php if (strtolower($role) === 'admin'): ?>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold">
-                                            <i class="bi bi-shield-lock-fill me-1"></i> Admin
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold">
-                                            <i class="bi bi-person-badge me-1"></i> Siswa
-                                        </span>
-                                    <?php endif; ?>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-semibold">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Aktif
+                                    </span>
                                 </td>
                             </tr>
                             <?php 
@@ -201,8 +197,8 @@ $total_users = mysqli_num_rows($result);
                             ?>
                             <tr>
                                 <td colspan="4" class="text-center py-5 text-muted">
-                                    <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary"></i>
-                                    Belum ada data pengguna yang terdaftar.
+                                    <i class="bi bi-person-x fs-1 d-block mb-2 text-secondary"></i>
+                                    Belum ada data siswa di dalam database.
                                 </td>
                             </tr>
                             <?php endif; ?>
@@ -213,7 +209,7 @@ $total_users = mysqli_num_rows($result);
             </div>
         </div>
 
-        <!-- Tombol Navigasi Kembali -->
+        <!-- Tombol Kembali -->
         <div class="d-flex justify-content-center mt-4">
             <a href="dashboard.php" class="btn btn-danger btn-back fw-bold px-5 py-2 shadow-sm">
                 <i class="bi bi-arrow-left-circle me-2"></i> Kembali ke Dashboard
@@ -222,7 +218,7 @@ $total_users = mysqli_num_rows($result);
 
     </div>
 
-    <!-- Live Search JavaScript -->
+    <!-- Script Live Search JavaScript -->
     <script>
     document.getElementById('searchInput').addEventListener('keyup', function() {
         let searchValue = this.value.toLowerCase().trim();
@@ -239,7 +235,7 @@ $total_users = mysqli_num_rows($result);
     });
     </script>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

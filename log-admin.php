@@ -163,7 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .container button{
-            background-color: #a8562d;
+            background-color: #0614d8;
             color: #fff;
             font-size: 12px;
             padding: 10px 45px;
@@ -277,9 +277,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .toggle{
-            background-color: #a84a2d;
+            background-color: #002281;
             height: 100%;
-            background: linear-gradient(to right, #e29a2e, #e45d19);
+            background: linear-gradient(to right, #0023ad, #195de4);
             color: #fff;
             position: relative;
             left: -100%;
@@ -336,7 +336,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             .container.active .sign-up{ display: block; }
             .container form{ padding: 40px 24px; }
             .container form p{ display: block; text-align: center; margin-top: 20px; }
-            .container form p a{ margin-left: 5px; color: #a8562d; font-weight: 600; }
+            .container form p a{ margin-left: 5px; color: #023b96; font-weight: 600; }
         }
         @media (max-width:480px){ .container{ border-radius: 20px; } }
     </style>
