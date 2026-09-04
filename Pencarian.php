@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_pinjam'])) {
     }
 }
 
+
 // 2. PROSES PENGEMBALIAN BUKU
 if (isset($_GET['action']) && $_GET['action'] == 'kembali' && isset($_GET['id_transaksi'])) {
     $id_transaksi = mysqli_real_escape_string($koneksi, $_GET['id_transaksi']);
@@ -92,12 +93,14 @@ if (isset($_GET['action']) && $_GET['action'] == 'kembali' && isset($_GET['id_tr
 
     $q_cek = mysqli_query($koneksi, "SELECT * FROM transaksi WHERE id_transaksi = '$id_transaksi'");
     if ($data = mysqli_fetch_assoc($q_cek)) {
-        $tgl_sekarang = new DateTime();
+        // Samakan format tanggal tanpa komponen jam/menit/detik
+        $tgl_sekarang = new DateTime(date('Y-m-d'));
         $tgl_tempo    = new DateTime($data['tanggal_jatuh_tempo']);
         
         $denda = 0;
         $status_denda = 'lunas';
 
+        // Hitung denda hanya jika tanggal pengembalian LEBIH DARI tanggal jatuh tempo
         if ($tgl_sekarang > $tgl_tempo) {
             $diff = $tgl_sekarang->diff($tgl_tempo);
             $terlambat_hari = $diff->days;
@@ -171,11 +174,11 @@ $result_buku = mysqli_query($koneksi, $query_buku);
 // 5. QUERY SISWA MEMINJAM AKTIF & TUNGGAKAN DENDA (Dengan Fitur Search)
 $search_peminjam = isset($_GET['search_peminjam']) ? mysqli_real_escape_string($koneksi, $_GET['search_peminjam']) : '';
 
-// Perhatikan penggunaan kurung () pada kondisi WHERE agar tidak tertukar dengan logika AND
+// Tampilkan jika status masih 'dipinjam' ATAU jika sudah kembali TAPI denda belum lunas dan nominal denda > 0
 $query_peminjam = "SELECT t.*, p.judul_buku 
                    FROM transaksi t 
                    JOIN penambahanbuku p ON t.ISBN = p.ISBN 
-                   WHERE (t.status_transaksi = 'dipinjam' OR t.status_denda = 'belum_lunas')";
+                   WHERE (t.status_transaksi = 'dipinjam' OR (t.status_denda = 'belum_lunas' AND t.denda_terutang > 0))";
 
 // Jika admin mengisi kolom pencarian pada tabel 2
 if ($search_peminjam != '') {
