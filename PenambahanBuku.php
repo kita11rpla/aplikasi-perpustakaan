@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
     $tahun_terbit = mysqli_real_escape_string($koneksi, trim($_POST['tahun_terbit']));
     $ISBN         = mysqli_real_escape_string($koneksi, trim($_POST['ISBN']));
     $stok         = (int)$_POST['stok'];
+    $katalog      = mysqli_real_escape_string($koneksi, trim($_POST['katalog']));
 
     $berhasil = false;
 
@@ -30,10 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
     $cek_isbn = mysqli_query($koneksi, "SELECT * FROM penambahanbuku WHERE ISBN = '$ISBN'");
 
     if (mysqli_num_rows($cek_isbn) > 0) {
-        // ----------------------------------------------------
-        // KONDISI 1: BUKU SUDAH ADA (UPDATE STOK)
-        // ----------------------------------------------------
-        $update = mysqli_query($koneksi, "UPDATE penambahanbuku SET stok = stok + $stok WHERE ISBN = '$ISBN'");
+        // KONDISI 1: BUKU SUDAH ADA (UPDATE STOK DAN KATALOG)
+        $update = mysqli_query($koneksi, "UPDATE penambahanbuku SET stok = stok + $stok, katalog = '$katalog' WHERE ISBN = '$ISBN'");
         if ($update) {
             $berhasil = true;
             $alert_msg = "Buku dengan ISBN ($ISBN) sudah terdaftar. Stok dan $stok unit eksemplar baru berhasil ditambahkan!";
@@ -42,11 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
             $alert_type = "danger";
         }
     } else {
-        // ----------------------------------------------------
         // KONDISI 2: BUKU BARU (INSERT MASTER)
-        // ----------------------------------------------------
-        $query = mysqli_query($koneksi, "INSERT INTO penambahanbuku (judul_buku, penulis, penerbit, tahun_terbit, ISBN, stok) 
-                                         VALUES ('$judul_buku', '$penulis', '$penerbit', '$tahun_terbit', '$ISBN', '$stok')");
+        $query = mysqli_query($koneksi, "INSERT INTO penambahanbuku (judul_buku, penulis, penerbit, tahun_terbit, ISBN, stok, katalog) 
+                                         VALUES ('$judul_buku', '$penulis', '$penerbit', '$tahun_terbit', '$ISBN', '$stok', '$katalog')");
         if ($query) {
             $berhasil = true;
             $alert_msg = "Buku baru berhasil tersimpan beserta $stok unit eksemplar!";
@@ -56,12 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
         }
     }
 
-    // ----------------------------------------------------
     // PEMBUATAN EKSEMPLAR AUTOMATIS
-    // (Jalan jika penambahan/update master buku berhasil)
-    // ----------------------------------------------------
     if ($berhasil) {
-        // Ambil nomor urut eksemplar terakhir untuk penomoran kontinu
         $q_last = mysqli_query($koneksi, "SELECT kode_buku FROM eksemplar_buku ORDER BY id_eksemplar DESC LIMIT 1");
         $last_num = 0;
 
@@ -70,7 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
             $last_num = (int) filter_var($row_last['kode_buku'], FILTER_SANITIZE_NUMBER_INT);
         }
 
-        // Generate unit eksemplar baru sebanyak $stok yang diinputkan
         for ($i = 1; $i <= $stok; $i++) {
             $last_num++;
             $kode_buku_baru = "BK-" . str_pad($last_num, 3, "0", STR_PAD_LEFT);
@@ -89,173 +81,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Penambahan Buku</title>
     
-    <!-- HTML5 QR / Barcode Scanner CDN -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .form-container { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); width: 100%; max-width: 550px; }
+        .form-container h3 { color: #1e3c72; margin-bottom: 20px; font-size: 22px; text-align: center; border-bottom: 2px solid #eef2f5; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 10px 0; vertical-align: middle; font-size: 14px; color: #444; }
+        input[type="text"], input[type="number"], input[type="date"], select {
+            width: 100%; padding: 10px 12px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
         }
-
-        body {
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .form-container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 550px;
-        }
-
-        .form-container h3 {
-            color: #1e3c72;
-            margin-bottom: 20px;
-            font-size: 22px;
-            text-align: center;
-            border-bottom: 2px solid #eef2f5;
-            padding-bottom: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        td {
-            padding: 10px 0;
-            vertical-align: middle;
-            font-size: 14px;
-            color: #444;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        input[type="date"] {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #cccccc;
-            border-radius: 6px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        input[type="text"]:focus,
-        input[type="number"]:focus,
-        input[type="date"]:focus {
-            border-color: #2a987b;
-            box-shadow: 0 0 5px rgba(42, 82, 152, 0.2);
-        }
-
-        .input-group-custom {
-            display: flex;
-            gap: 8px;
-        }
-
-        .Simpan input[type="submit"] {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-
-        .Simpan input[type="submit"]:hover {
-            background-color: #005e16;
-        }
-
-        .Back input[type="button"] {
-            background-color: #ff0000;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-
-        .Back input[type="button"]:hover {
-            background-color: #8a0000;
-        }
-
-        .btn-scan {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-weight: bold;
-            white-space: nowrap;
-            transition: background 0.2s;
-        }
-        
-        .btn-scan:hover { 
-            background-color: #218838; 
-        }
-        
-        .modal-scanner {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6);
-        }
-
-        .modal-content-scanner {
-            background-color: #fff;
-            margin: 10% auto;
-            padding: 20px;
-            width: 90%;
-            max-width: 450px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn-close-modal {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin-top: 15px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-weight: 500;
-        }
-
-        .btn-close-modal:hover { 
-            background-color: #c82333; 
-        }
-
-        .alert {
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            text-align: center;
-        }
+        input:focus, select:focus { border-color: #2a987b; box-shadow: 0 0 5px rgba(42, 82, 152, 0.2); }
+        .input-group-custom { display: flex; gap: 8px; }
+        .Simpan input[type="submit"] { background-color: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; font-size: 14px; transition: background 0.3s; }
+        .Simpan input[type="submit"]:hover { background-color: #005e16; }
+        .Back input[type="button"] { background-color: #ff0000; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; font-size: 14px; transition: background 0.3s; }
+        .Back input[type="button"]:hover { background-color: #8a0000; }
+        .btn-scan { background-color: #28a745; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 6px; font-weight: bold; white-space: nowrap; transition: background 0.2s; }
+        .btn-scan:hover { background-color: #218838; }
+        .modal-scanner { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .modal-content-scanner { background-color: #fff; margin: 10% auto; padding: 20px; width: 90%; max-width: 450px; border-radius: 8px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .btn-close-modal { background-color: #dc3545; color: white; border: none; padding: 8px 16px; margin-top: 15px; cursor: pointer; border-radius: 6px; font-weight: 500; }
+        .btn-close-modal:hover { background-color: #c82333; }
+        .alert { padding: 12px; margin-bottom: 15px; border-radius: 6px; font-weight: 600; font-size: 14px; text-align: center; }
         .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
@@ -265,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
 <div class="form-container">
     <h3>Penambahan Buku</h3>
 
-    <!-- Pesan Alert Status -->
     <?php if (!empty($alert_msg)): ?>
         <div class="alert alert-<?= $alert_type ?>">
             <?= $alert_msg ?>
@@ -300,6 +149,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
                 </td>
             </tr>
             <tr>
+                <td>Katalog Buku</td>
+                <td>
+                    <select name="katalog" required>
+                        <option value="">-- Pilih Katalog Buku --</option>
+                        <option value="Fiksi">Fiksi (Novel, Fiksi Remaja, Komik, Puisi)</option>
+                        <option value="Nonfiksi">Nonfiksi (Pengembangan Diri, Bisnis, Biografi, Sejarah)</option>
+                        <option value="Pengetahuan & Akademik">Pengetahuan & Akademik (Pelajaran, Sains, Hukum, Teknik)</option>
+                        <option value="Hobi & Gaya Hidup">Hobi & Gaya Hidup (Kuliner, Kesehatan, Seni, Traveling)</option>
+                        <option value="Religi">Religi (Buku Agama & Spiritualitas)</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
                 <td>Jumlah Stok</td>
                 <td><input type="number" name="stok" min="1" value="1" required placeholder="Jumlah eksemplar"></td>
             </tr>
@@ -319,7 +181,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
     </div>
 </div>
 
-<!-- MODAL POPUP CAMERA SCANNER -->
 <div id="modalScanner" class="modal-scanner">
     <div class="modal-content-scanner">
         <h4>Scan Barcode Buku (ISBN)</h4>
@@ -329,18 +190,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
     </div>
 </div>
 
-<!-- JAVASCRIPT SCANNER -->
 <script>
 let html5QrcodeScanner = null;
 
 function bukaScanner() {
     document.getElementById('modalScanner').style.display = 'block';
-    
-    html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-        fps: 10, 
-        qrbox: { width: 250, height: 150 } 
-    });
-
+    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 150 } });
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 }
 
@@ -349,7 +204,6 @@ function tutupScanner() {
         html5QrcodeScanner.clear().then(() => {
             document.getElementById('modalScanner').style.display = 'none';
         }).catch(error => {
-            console.error("Gagal menghentikan scanner", error);
             document.getElementById('modalScanner').style.display = 'none';
         });
     } else {
@@ -362,9 +216,7 @@ function onScanSuccess(decodedText, decodedResult) {
     tutupScanner();
 }
 
-function onScanFailure(error) {
-    // Abaikan error per frame
-}
+function onScanFailure(error) {}
 </script>
 
 </body>

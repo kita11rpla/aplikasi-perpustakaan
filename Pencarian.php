@@ -85,7 +85,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_pinjam'])) {
     }
 }
 
-
 // 2. PROSES PENGEMBALIAN BUKU
 if (isset($_GET['action']) && $_GET['action'] == 'kembali' && isset($_GET['id_transaksi'])) {
     $id_transaksi = mysqli_real_escape_string($koneksi, $_GET['id_transaksi']);
@@ -143,9 +142,10 @@ if (isset($_GET['action']) && $_GET['action'] == 'lunasi' && isset($_GET['id_tra
     }
 }
 
-// 4. QUERY KATALOG BUKU DENGAN PERHITUNGAN STOK
-$search   = isset($_GET['search']) ? mysqli_real_escape_string($koneksi, $_GET['search']) : '';
-$kategori = isset($_GET['kategori']) ? mysqli_real_escape_string($koneksi, $_GET['kategori']) : '';
+
+// 4. QUERY KATALOG BUKU DENGAN PERHITUNGAN STOK & FILTER KATALOG
+$search  = isset($_GET['search']) ? mysqli_real_escape_string($koneksi, trim($_GET['search'])) : '';
+$katalog = isset($_GET['katalog']) ? mysqli_real_escape_string($koneksi, trim($_GET['katalog'])) : '';
 
 $query_buku = "SELECT p.*, 
                 IFNULL(p.stok, 0) AS total_stok,
@@ -163,13 +163,14 @@ $query_buku = "SELECT p.*,
 if ($search != '') {
     $query_buku .= " AND (p.judul_buku LIKE '%$search%' OR p.penulis LIKE '%$search%' OR p.ISBN LIKE '%$search%')";
 }
-if ($kategori != '' && $kategori != 'Semua Kategori') {
-    $query_buku .= " AND p.penerbit LIKE '%$kategori%'"; 
+
+// Filter berdasarkan Katalog jika dipilih (Hanya menggunakan kolom p.katalog)
+if ($katalog != '') {
+    $query_buku .= " AND p.katalog = '$katalog'";
 }
 
 $query_buku .= " ORDER BY p.judul_buku ASC";
 $result_buku = mysqli_query($koneksi, $query_buku);
-
 
 // 5. QUERY SISWA MEMINJAM AKTIF & TUNGGAKAN DENDA (Dengan Fitur Search)
 $search_peminjam = isset($_GET['search_peminjam']) ? mysqli_real_escape_string($koneksi, $_GET['search_peminjam']) : '';
@@ -249,13 +250,26 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
         <!-- Form Filter & Search Katalog -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
-                <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="GET" id="searchForm" class="row g-3">
+                <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="GET" id="searchForm" class="row g-3 align-items-center">
                     <!-- Menyimpan state search peminjam agar tidak hilang saat mencari katalog -->
                     <?php if(!empty($search_peminjam)): ?>
                         <input type="hidden" name="search_peminjam" value="<?php echo htmlspecialchars($search_peminjam); ?>">
                     <?php endif; ?>
                     
-                    <div class="col-md-7">
+                    <!-- 1. Dropdown Pilih Katalog -->
+                    <div class="col-md-4">
+                        <select name="katalog" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Semua Katalog --</option>
+                            <option value="Fiksi" <?php echo ($katalog == 'Fiksi') ? 'selected' : ''; ?>>Fiksi </option>
+                            <option value="Nonfiksi" <?php echo ($katalog == 'Nonfiksi') ? 'selected' : ''; ?>>Nonfiksi</option>
+                            <option value="Pengetahuan & Akademik" <?php echo ($katalog == 'Pengetahuan & Akademik') ? 'selected' : ''; ?>>Pengetahuan & Akademik </option>
+                            <option value="Hobi & Gaya Hidup" <?php echo ($katalog == 'Hobi & Gaya Hidup') ? 'selected' : ''; ?>>Hobi & Gaya Hidup</option>
+                            <option value="Religi" <?php echo ($katalog == 'Religi') ? 'selected' : ''; ?>>Religi</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Input Kata Kunci Search -->
+                    <div class="col-md-5">
                         <div class="input-group">
                             <input type="text" name="search" id="searchInput" class="form-control" placeholder="Cari judul buku, penulis, ISBN..." value="<?php echo htmlspecialchars($search); ?>">
                             
@@ -271,7 +285,8 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                         </div>
                     </div>
 
-                    <div class="col-md-5">
+                    <!-- 3. Tombol Submit Cari -->
+                    <div class="col-md-3">
                         <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-search me-1"></i> Cari Katalog</button>
                     </div>
                 </form>
@@ -291,6 +306,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                                 <th>No</th>
                                 <th>Judul Buku</th>
                                 <th>Penulis</th>
+                                <th>Katalog</th>
                                 <th>ISBN</th>
                                 <th class="text-center">Stok (Tersedia / Total)</th>
                                 <th class="text-center">Aksi</th>
@@ -303,11 +319,20 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                             while($row = mysqli_fetch_assoc($result_buku)) {
                                 $sisa = (int)$row['sisa_stok'];
                                 $total = (int)$row['total_stok'];
+                                $nama_katalog = !empty($row['katalog']) ? $row['katalog'] : (!empty($row['kategori']) ? $row['kategori'] : '-');
                         ?>
                             <tr>
                                 <td><?php echo $no++; ?></td>
                                 <td><span class="fw-bold text-dark"><?php echo htmlspecialchars($row['judul_buku']); ?></span></td>
                                 <td><?php echo htmlspecialchars($row['penulis']); ?></td>
+                                
+                                <!-- Kolom Katalog Buku -->
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">
+                                        <i class="bi bi-tag-fill text-primary me-1"></i><?php echo htmlspecialchars($nama_katalog); ?>
+                                    </span>
+                                </td>
+
                                 <td><span class="badge bg-secondary font-monospace"><?php echo htmlspecialchars($row['ISBN']); ?></span></td>
                                 
                                 <!-- Tampilan Stok -->
@@ -331,7 +356,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                                             <i class="bi bi-journal-arrow-up me-1"></i> Pinjamkan
                                         </button>
                                     <?php else: ?>
-                                        <button class="btn btn-sm btn-danger fw-bold" >
+                                        <button class="btn btn-sm btn-danger fw-bold" disabled>
                                             <i class="bi bi-x-circle me-1"></i> Stok Habis
                                         </button>
                                     <?php endif; ?>
@@ -340,7 +365,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                         <?php 
                             }
                         } else {
-                            echo "<tr><td colspan='6' class='text-center py-4 text-muted'>Data buku tidak ditemukan.</td></tr>";
+                            echo "<tr><td colspan='7' class='text-center py-4 text-muted'>Data buku tidak ditemukan.</td></tr>";
                         }
                         ?>
                         </tbody>
@@ -351,33 +376,48 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
 
         <!-- TABEL 2: DAFTAR PEMINJAM AKTIF & TUNGGAKAN DENDA -->
         <div class="card shadow-sm border-0">
-            <!-- Header Table 2: Diubah menjadi flex container agar judul & form search bisa sejajar -->
+            <!-- Header Table 2 -->
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-people me-2"></i>Daftar Meminjam & Tunggakan Denda</h5>
                 
                 <!-- KOLOM SEARCH KHUSUS PEMINJAM -->
-                <form action="" method="GET" class="mb-0">
-                    <!-- Menyimpan state search katalog agar tidak reset ketika mencari peminjam -->
+                <form action="pencarian.php" method="GET" class="mb-0">
+                    <!-- Menyimpan state search & katalog agar tidak reset ketika mencari peminjam -->
                     <?php if(!empty($search)): ?>
                         <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
                     <?php endif; ?>
+                    <?php if(!empty($katalog)): ?>
+                        <input type="hidden" name="katalog" value="<?php echo htmlspecialchars($katalog); ?>">
+                    <?php endif; ?>
 
-                    <div class="input-group input-group-sm" style="width: 300px;">
-                        <input type="text" name="search_peminjam" class="form-control" placeholder="Cari Siswa, Kode, Judul..." value="<?php echo htmlspecialchars($search_peminjam); ?>">
-                        <button class="btn btn-outline-danger" type="submit" title="Cari Peminjam">
-                            <i class="bi bi-search"></i>
-                        </button>
+                    <div class="input-group input-group-sm" style="width: 400px;">
+                        <input type="text" 
+                               name="search_peminjam" 
+                               class="form-control" 
+                               placeholder="Cari nama peminjam, NIS, atau judul..." 
+                               value="<?php echo htmlspecialchars($search_peminjam ?? ''); ?>">
                         
-                        <!-- Tombol Clear Search Peminjam (Muncul saat ada pencarian) -->
-                        <?php if(!empty($search_peminjam)): ?>
-                            <a href="pencarian.php<?php echo !empty($search) ? '?search='.urlencode($search) : ''; ?>" class="btn btn-outline-secondary" title="Reset">
+                        <?php if (!empty($search_peminjam)): ?>
+                            <!-- Tombol X Merah untuk mereset pencarian peminjam -->
+                            <?php 
+                            $params = array_filter(['search' => $search, 'katalog' => $katalog]);
+                            $query_string = !empty($params) ? '?' . http_build_query($params) : '';
+                            ?>
+                            <a href="pencarian.php<?php echo $query_string; ?>" 
+                               class="btn btn-outline-danger d-flex align-items-center justify-content-center px-3" 
+                               title="Hapus pencarian">
                                 <i class="bi bi-x-lg"></i>
                             </a>
+                        <?php else: ?>
+                            <button class="btn btn-primary px-3" type="submit" title="Cari Peminjam">
+                                <i class="bi bi-search me-1"></i> Cari
+                            </button>
                         <?php endif; ?>
                     </div>
                 </form>
             </div>
 
+            <div class="card-body p-0">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -599,18 +639,17 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
             });
         }
 
-        function onScanSuccess(decodedText, decodedResult) {
-            html5QrcodeScanner.clear();
+        function onScanSuccess(decodedText) {
             document.getElementById('searchInput').value = decodedText;
-            
-            const bsModal = bootstrap.Modal.getInstance(modalScan);
-            if (bsModal) bsModal.hide();
-
+            const modalInstance = bootstrap.Modal.getInstance(modalScan);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             document.getElementById('searchForm').submit();
         }
 
         function onScanFailure(error) {
-            // Silence frame errors
+            // Abaikan kesalahan pembacaan per frame
         }
     });
     </script>
