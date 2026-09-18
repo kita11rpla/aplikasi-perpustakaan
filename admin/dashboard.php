@@ -1,5 +1,5 @@
 <?php
-include "Koneksi.php";
+require_once __DIR__ . '/../config/koneksi.php';
 
 // 1. Memulai session untuk membaca data user yang login
 if (session_status() === PHP_SESSION_NONE) {
@@ -9,15 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // 2. PROTEKSI HALAMAN: Cek apakah session 'user' ada dan tidak kosong
 if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
     
-    // PENTING: Deteksi otomatis jalur file agar bebas error redirect 404 / terpental
-    // Jika file dashboard ini ditaruh di dalam sub-folder (misal: folder 'admin'), gunakan '../log-admin.php'
-    // Jika ditaruh di folder utama (sejajar log-admin.php), cukup gunakan 'log-admin.php'
-    
-    if (file_exists('../log-admin.php')) {
-        header("Location: ../log-admin.php");
-    } else {
-        header("Location: log-admin.php");
-    }
+    header("Location: login-admin.php");
     exit();
 }
 
@@ -138,14 +130,14 @@ $user = $_SESSION['user'];
 
 <div class="sidebar">
     <h2>Admin Panel</h2>
-    <a href="Pencarian.php">🔎 Pencarian Buku</a>
-    <a href="TabelPengguna.php">👤 User Admin</a>
-    <a href="TabelPengguna-Siswa.php"> 👤 User Siswa</a>
+    <a href="pencarian.php">🔎 Pencarian Buku</a>
+    <a href="tabel-pengguna.php">👤 User Admin</a>
+    <a href="tabel-pengguna-siswa.php"> 👤 User Siswa</a>
     <a href="#">📈 Statistik</a>
     <a href="laporan.php">📝 Laporan Buku</a>
     
     <!-- URL Logout otomatis mendeteksi folder -->
-    <a class="logout" href="<?php echo file_exists('../logout.php') ? '../logout.php' : 'logout.php'; ?>">
+    <a class="logout" href="logout.php">
         Logout
     </a>
 </div>

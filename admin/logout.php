@@ -16,6 +16,6 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // 4. Alihkan kembali ke halaman login utama
-header("Location: log-admin.php");
+header("Location: login-admin.php");
 exit();
 ?>

@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'Koneksi.php';
+require_once __DIR__ . '/../config/koneksi.php';
 
 if (isset($_SESSION['siswa'])) {
     header('Location: dashboard-siswa.php');

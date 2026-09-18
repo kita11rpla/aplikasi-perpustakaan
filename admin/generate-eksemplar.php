@@ -1,5 +1,5 @@
 <?php
-include 'Koneksi.php';
+require_once __DIR__ . '/../config/koneksi.php'; // Path relatif ke file koneksi.php
 
 // Ambil semua data dari penambahanbuku
 $q_buku = mysqli_query($koneksi, "SELECT ISBN, stok FROM penambahanbuku");

@@ -5,15 +5,11 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Proteksi Halaman: Wajib Login
 if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
-    if (file_exists('../log-admin.php')) {
-        header("Location: ../log-admin.php");
-    } else {
-        header("Location: log-admin.php");
-    }
+    header("Location: login-admin.php");
     exit();
 }
 
-include 'koneksi.php';
+require_once __DIR__ . '/../config/koneksi.php';
 
 // Filter Pencarian & Tanggal di Laporan
 $search     = isset($_GET['search']) ? mysqli_real_escape_string($koneksi, $_GET['search']) : '';

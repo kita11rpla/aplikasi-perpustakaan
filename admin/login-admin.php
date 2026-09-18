@@ -5,14 +5,11 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 2. Hubungkan dengan file koneksi database kamu
-include 'koneksi.php'; 
+require_once __DIR__ . '/../config/koneksi.php';
 
 // 3. DETEKSI OTOMATIS JALUR DASHBOARD
 // Memastikan arah redirect benar, baik dashboard ditaruh di folder 'admin/' atau folder utama
 $dashboard_path = "dashboard.php";
-if (is_dir('admin') && file_exists('admin/dashboard.php')) {
-    $dashboard_path = "admin/dashboard.php";
-}
 
 // 4. PROTEKSI HALAMAN: Jika user SUDAH login, jangan biarkan masuk ke halaman login lagi
 if (isset($_SESSION['user']) && !empty($_SESSION['user'])) {

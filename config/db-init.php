@@ -1,6 +1,18 @@
 <?php
 // Inisialisasi tabel yang diperlukan jika belum ada.
 function initializeDatabaseTables($koneksi) {
+    $column_check = mysqli_query($koneksi, "
+        SELECT COUNT(*) AS total
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'penambahanbuku'
+          AND COLUMN_NAME = 'stok'
+    ");
+
+    if ($column_check && (int)mysqli_fetch_assoc($column_check)['total'] === 0) {
+        mysqli_query($koneksi, "ALTER TABLE penambahanbuku ADD COLUMN stok int(11) NOT NULL DEFAULT 1 AFTER ISBN");
+    }
+
     $queries = [
         "CREATE TABLE IF NOT EXISTS siswa (
             nisn varchar(20) NOT NULL,

@@ -5,7 +5,7 @@ if (!isset($_SESSION['siswa'])) {
     exit;
 }
 
-include 'Koneksi.php';
+require_once __DIR__ . '/../config/koneksi.php';
 $user = $_SESSION['siswa'];
 
 // KUERI BARU: MENGHITUNG TOTAL STOK, DIPINJAM, DAN SISA STOK REAL-TIME

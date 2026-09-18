@@ -11,8 +11,8 @@
         die('Koneksi database gagal: ' . mysqli_connect_error());
     }
 
-    if (file_exists(__DIR__ . '/db_init.php')) {
-        require_once __DIR__ . '/db_init.php';
+    if (file_exists(__DIR__ . '/db-init.php')) {
+        require_once __DIR__ . '/db-init.php';
         initializeDatabaseTables($koneksi);
     }
 ?>
