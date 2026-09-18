@@ -13,7 +13,27 @@ function initializeDatabaseTables($koneksi) {
         mysqli_query($koneksi, "ALTER TABLE penambahanbuku ADD COLUMN stok int(11) NOT NULL DEFAULT 1 AFTER ISBN");
     }
 
+    $transaction_column_check = mysqli_query($koneksi, "
+        SELECT COUNT(*) AS total
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'transaksi'
+          AND COLUMN_NAME = 'kode_buku'
+    ");
+
+    if ($transaction_column_check && (int)mysqli_fetch_assoc($transaction_column_check)['total'] === 0) {
+        mysqli_query($koneksi, "ALTER TABLE transaksi ADD COLUMN kode_buku varchar(30) DEFAULT NULL AFTER ISBN");
+    }
+
     $queries = [
+        "CREATE TABLE IF NOT EXISTS eksemplar_buku (
+            id_eksemplar int(11) NOT NULL AUTO_INCREMENT,
+            ISBN varchar(30) NOT NULL,
+            kode_buku varchar(30) NOT NULL,
+            status varchar(20) NOT NULL DEFAULT 'Tersedia',
+            PRIMARY KEY (id_eksemplar),
+            UNIQUE KEY uq_kode_buku (kode_buku)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
         "CREATE TABLE IF NOT EXISTS siswa (
             nisn varchar(20) NOT NULL,
             nama varchar(100) NOT NULL,

@@ -20,7 +20,7 @@ $alert_type = "";
 // 1. PROSES SIMPAN PEMINJAMAN BUKU BARU (Dengan Kode Eksemplar)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_pinjam'])) {
     $isbn                = mysqli_real_escape_string($koneksi, trim($_POST['isbn']));
-    $kode_eksemplar      = mysqli_real_escape_string($koneksi, trim($_POST['kode_eksemplar']));
+    $kode_buku           = mysqli_real_escape_string($koneksi, trim($_POST['kode_buku'] ?? ''));
     $nama_peminjam       = mysqli_real_escape_string($koneksi, trim($_POST['nama_peminjam']));
     $tanggal_pinjam      = mysqli_real_escape_string($koneksi, trim($_POST['tanggal_pinjam']));
     $tanggal_jatuh_tempo = mysqli_real_escape_string($koneksi, trim($_POST['tanggal_jatuh_tempo']));
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_pinjam'])) {
         $sisa_stok = $total_stok - $sedang_dipinjam;
 
         // --- CEK 2: Apakah kode eksemplar untuk BUKU INI (ISBN spesifik) sedang dipinjam & belum kembali? ---
-        $cek_eksemplar = mysqli_query($koneksi, "SELECT * FROM transaksi WHERE ISBN = '$isbn' AND kode_eksemplar = '$kode_eksemplar' AND status_transaksi = 'dipinjam'");
+        $cek_eksemplar = mysqli_query($koneksi, "SELECT * FROM transaksi WHERE ISBN = '$isbn' AND kode_buku = '$kode_buku' AND status_transaksi = 'dipinjam'");
 
         // --- CEK 3: Apakah siswa ini sedang meminjam buku ini & belum mengembalikan? ---
         $cek_siswa = mysqli_query($koneksi, "SELECT * FROM transaksi WHERE ISBN = '$isbn' AND nama_peminjam = '$nama_peminjam' AND status_transaksi = 'dipinjam'");
@@ -64,17 +64,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_pinjam'])) {
             $alert_msg = "Gagal! Stok buku ini sedang habis (semua unit dipinjam).";
             $alert_type = "warning";
         } elseif (mysqli_num_rows($cek_eksemplar) > 0) {
-            $alert_msg = "Gagal! Kode Eksemplar '$kode_eksemplar' sedang dipinjam oleh orang lain.";
+            $alert_msg = "Gagal! Kode Buku '$kode_buku' sedang dipinjam oleh orang lain.";
             $alert_type = "warning";
         } elseif (mysqli_num_rows($cek_siswa) > 0) {
             $alert_msg = "Gagal! Siswa '$nama_peminjam' sedang meminjam buku ini dan belum mengembalikannya.";
             $alert_type = "warning";
         } else {
             // Simpan Transaksi dengan Kode Eksemplar
-            $insert = mysqli_query($koneksi, "INSERT INTO transaksi (ISBN, kode_eksemplar, nama_peminjam, tanggal_pinjam, tanggal_jatuh_tempo, status_transaksi, status_denda, denda_terutang) 
-                                              VALUES ('$isbn', '$kode_eksemplar', '$nama_peminjam', '$tanggal_pinjam', '$tanggal_jatuh_tempo', 'dipinjam', 'belum_lunas', 0)");
+            $insert = mysqli_query($koneksi, "INSERT INTO transaksi (ISBN, kode_buku, nama_peminjam, tanggal_pinjam, tanggal_jatuh_tempo, status_transaksi, status_denda, denda_terutang) 
+                                              VALUES ('$isbn', '$kode_buku', '$nama_peminjam', '$tanggal_pinjam', '$tanggal_jatuh_tempo', 'dipinjam', 'belum_lunas', 0)");
             if ($insert) {
-                $alert_msg = "Peminjaman dengan Kode Buku ($kode_eksemplar) berhasil dicatat!";
+                $alert_msg = "Peminjaman dengan Kode Buku ($kode_buku) berhasil dicatat!";
                 $alert_type = "success";
             } else {
                 $alert_msg = "Gagal menyimpan: " . mysqli_error($koneksi);
@@ -182,7 +182,7 @@ $query_peminjam = "SELECT t.*, p.judul_buku
 // Jika admin mengisi kolom pencarian pada tabel 2
 if ($search_peminjam != '') {
     $query_peminjam .= " AND (t.nama_peminjam LIKE '%$search_peminjam%' 
-                              OR t.kode_eksemplar LIKE '%$search_peminjam%' 
+                              OR t.kode_buku LIKE '%$search_peminjam%' 
                               OR p.judul_buku LIKE '%$search_peminjam%')";
 }
 
@@ -424,7 +424,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                                 <!-- Kode Eksemplar / Kode Buku Fisik -->
                                 <td>
                                     <span class="badge bg-info text-dark font-monospace fw-bold">
-                                        <?php echo !empty($p['kode_eksemplar']) ? htmlspecialchars($p['kode_eksemplar']) : '-'; ?>
+                                        <?php echo !empty($p['kode_buku']) ? htmlspecialchars($p['kode_buku']) : '-'; ?>
                                     </span>
                                 </td>
                                 
@@ -517,7 +517,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                         <!-- Input Kode Eksemplar / Kode Buku Unique -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Kode Eksemplar / Kode Buku Fisik</label>
-                            <input type="text" name="kode_eksemplar" class="form-control" placeholder="Contoh: BK-0001, BK-0002" required>
+                            <input type="text" name="kode_buku" class="form-control" placeholder="Contoh: BK-0001, BK-0002" required>
                             <small class="text-muted">*Masukkan kode stiker/label khusus pada fisik buku yang dipinjam.</small>
                         </div>
 

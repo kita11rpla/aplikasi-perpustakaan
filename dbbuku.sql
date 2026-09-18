@@ -30,6 +30,7 @@ INSERT INTO `penambahanbuku` (`id_buku`, `judul_buku`, `penulis`, `penerbit`, `t
 CREATE TABLE `transaksi` (
   `id_transaksi` int(11) NOT NULL,
   `ISBN` varchar(30) NOT NULL,
+  `kode_buku` varchar(30) DEFAULT NULL,
   `nama_peminjam` varchar(100) NOT NULL,
   `tanggal_pinjam` date NOT NULL,
   `tanggal_jatuh_tempo` date DEFAULT NULL,
