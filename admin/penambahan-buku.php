@@ -15,6 +15,7 @@ $alert_type = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
     $judul_buku   = mysqli_real_escape_string($koneksi, trim($_POST['judul_buku']));
     $penulis      = mysqli_real_escape_string($koneksi, trim($_POST['penulis']));
+    $katalog      = mysqli_real_escape_string($koneksi, trim($_POST['katalog'] ?? ''));
     $penerbit     = mysqli_real_escape_string($koneksi, trim($_POST['penerbit']));
     $tahun_terbit = mysqli_real_escape_string($koneksi, trim($_POST['tahun_terbit']));
     $ISBN         = mysqli_real_escape_string($koneksi, trim($_POST['ISBN']));
@@ -41,8 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
         // ----------------------------------------------------
         // KONDISI 2: BUKU BARU (INSERT MASTER)
         // ----------------------------------------------------
-        $query = mysqli_query($koneksi, "INSERT INTO penambahanbuku (judul_buku, penulis, penerbit, tahun_terbit, ISBN, stok) 
-                                         VALUES ('$judul_buku', '$penulis', '$penerbit', '$tahun_terbit', '$ISBN', '$stok')");
+        $query = mysqli_query($koneksi, "INSERT INTO penambahanbuku (judul_buku, penulis, katalog, penerbit, tahun_terbit, ISBN, stok)
+                         VALUES ('$judul_buku', '$penulis', '$katalog', '$penerbit', '$tahun_terbit', '$ISBN', '$stok')");
         if ($query) {
             $berhasil = true;
             $alert_msg = "Buku baru berhasil tersimpan beserta $stok unit eksemplar!";
@@ -277,6 +278,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses'])) {
             <tr>
                 <td>Penulis</td>
                 <td><input type="text" name="penulis" required placeholder="Nama penulis"></td>
+            </tr>
+            <tr>
+                <td>Katalog</td>
+                <td>
+                    <select name="katalog" required>
+                        <option value="">-- Pilih Katalog --</option>
+                        <option value="Fiksi">Fiksi</option>
+                        <option value="Nonfiksi">Nonfiksi</option>
+                        <option value="Pengetahuan & Akademik">Pengetahuan &amp; Akademik</option>
+                        <option value="Hobi & Gaya Hidup">Hobi &amp; Gaya Hidup</option>
+                        <option value="Religi">Religi</option>
+                    </select>
+                </td>
             </tr>
             <tr>
                 <td>Penerbit Lokal</td>

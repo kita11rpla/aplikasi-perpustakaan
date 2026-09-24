@@ -12,8 +12,6 @@ if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
 // Memanggil file koneksi dari folder config (naik 1 level dari folder admin)
 require_once __DIR__ . '/../config/koneksi.php';
 
-// Masukkan query database kamu di bawah sini...
-
 $alert_msg = "";
 $alert_type = "";
 
@@ -142,9 +140,9 @@ if (isset($_GET['action']) && $_GET['action'] == 'lunasi' && isset($_GET['id_tra
     }
 }
 
-// 4. QUERY KATALOG BUKU DENGAN PERHITUNGAN STOK
+// 4. QUERY KATALOG BUKU DENGAN PERHITUNGAN STOK & FILTER KATALOG
 $search   = isset($_GET['search']) ? mysqli_real_escape_string($koneksi, $_GET['search']) : '';
-$kategori = isset($_GET['kategori']) ? mysqli_real_escape_string($koneksi, $_GET['kategori']) : '';
+$katalog  = isset($_GET['katalog']) ? mysqli_real_escape_string($koneksi, trim($_GET['katalog'])) : '';
 
 $query_buku = "SELECT p.*, 
                 IFNULL(p.stok, 0) AS total_stok,
@@ -162,8 +160,8 @@ $query_buku = "SELECT p.*,
 if ($search != '') {
     $query_buku .= " AND (p.judul_buku LIKE '%$search%' OR p.penulis LIKE '%$search%' OR p.ISBN LIKE '%$search%')";
 }
-if ($kategori != '' && $kategori != 'Semua Kategori') {
-    $query_buku .= " AND p.penerbit LIKE '%$kategori%'"; 
+if ($katalog != '') {
+    $query_buku .= " AND p.katalog = '$katalog'";
 }
 
 $query_buku .= " ORDER BY p.judul_buku ASC";
@@ -254,7 +252,18 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                         <input type="hidden" name="search_peminjam" value="<?php echo htmlspecialchars($search_peminjam); ?>">
                     <?php endif; ?>
                     
-                    <div class="col-md-7">
+                    <div class="col-md-4">
+                        <select name="katalog" class="form-select" onchange="this.form.submit()">
+                            <option value="">-- Semua Katalog --</option>
+                            <option value="Fiksi" <?php echo ($katalog == 'Fiksi') ? 'selected' : ''; ?>>Fiksi</option>
+                            <option value="Nonfiksi" <?php echo ($katalog == 'Nonfiksi') ? 'selected' : ''; ?>>Nonfiksi</option>
+                            <option value="Pengetahuan & Akademik" <?php echo ($katalog == 'Pengetahuan & Akademik') ? 'selected' : ''; ?>>Pengetahuan &amp; Akademik</option>
+                            <option value="Hobi & Gaya Hidup" <?php echo ($katalog == 'Hobi & Gaya Hidup') ? 'selected' : ''; ?>>Hobi &amp; Gaya Hidup</option>
+                            <option value="Religi" <?php echo ($katalog == 'Religi') ? 'selected' : ''; ?>>Religi</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
                         <div class="input-group">
                             <input type="text" name="search" id="searchInput" class="form-control" placeholder="Cari judul buku, penulis, ISBN..." value="<?php echo htmlspecialchars($search); ?>">
                             
@@ -270,7 +279,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                         </div>
                     </div>
 
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-search me-1"></i> Cari Katalog</button>
                     </div>
                 </form>
@@ -290,6 +299,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                                 <th>No</th>
                                 <th>Judul Buku</th>
                                 <th>Penulis</th>
+                                <th>Katalog</th>
                                 <th>ISBN</th>
                                 <th class="text-center">Stok (Tersedia / Total)</th>
                                 <th class="text-center">Aksi</th>
@@ -307,6 +317,11 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                                 <td><?php echo $no++; ?></td>
                                 <td><span class="fw-bold text-dark"><?php echo htmlspecialchars($row['judul_buku']); ?></span></td>
                                 <td><?php echo htmlspecialchars($row['penulis']); ?></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">
+                                        <i class="bi bi-tag-fill text-primary me-1"></i><?php echo htmlspecialchars(!empty($row['katalog']) ? $row['katalog'] : '-'); ?>
+                                    </span>
+                                </td>
                                 <td><span class="badge bg-secondary font-monospace"><?php echo htmlspecialchars($row['ISBN']); ?></span></td>
                                 
                                 <!-- Tampilan Stok -->
@@ -339,7 +354,7 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                         <?php 
                             }
                         } else {
-                            echo "<tr><td colspan='6' class='text-center py-4 text-muted'>Data buku tidak ditemukan.</td></tr>";
+                            echo "<tr><td colspan='7' class='text-center py-4 text-muted'>Data buku tidak ditemukan.</td></tr>";
                         }
                         ?>
                         </tbody>
@@ -359,6 +374,9 @@ $result_peminjam = mysqli_query($koneksi, $query_peminjam);
                     <!-- Menyimpan state search katalog agar tidak reset ketika mencari peminjam -->
                     <?php if(!empty($search)): ?>
                         <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
+                    <?php endif; ?>
+                    <?php if(!empty($katalog)): ?>
+                        <input type="hidden" name="katalog" value="<?php echo htmlspecialchars($katalog); ?>">
                     <?php endif; ?>
 
                     <div class="input-group input-group-sm" style="width: 300px;">

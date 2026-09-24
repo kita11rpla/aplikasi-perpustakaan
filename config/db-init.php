@@ -13,6 +13,18 @@ function initializeDatabaseTables($koneksi) {
         mysqli_query($koneksi, "ALTER TABLE penambahanbuku ADD COLUMN stok int(11) NOT NULL DEFAULT 1 AFTER ISBN");
     }
 
+    $catalog_column_check = mysqli_query($koneksi, "
+        SELECT COUNT(*) AS total
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'penambahanbuku'
+          AND COLUMN_NAME = 'katalog'
+    ");
+
+    if ($catalog_column_check && (int)mysqli_fetch_assoc($catalog_column_check)['total'] === 0) {
+        mysqli_query($koneksi, "ALTER TABLE penambahanbuku ADD COLUMN katalog varchar(100) DEFAULT NULL AFTER penulis");
+    }
+
     $transaction_column_check = mysqli_query($koneksi, "
         SELECT COUNT(*) AS total
         FROM information_schema.COLUMNS
