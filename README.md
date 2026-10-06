@@ -22,4 +22,4 @@ Status: On Going
 
 ## KuruKuru
 
-![Kurukuru](cadangan/kurukuru.gif)
+![Kurukuru](src/kurukuru.gif)
